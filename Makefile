@@ -1,2 +1,6 @@
-hw3:  cscd340_f13_hw3.c linkedList.h linkedList.c alias.h alias.c
-	gcc cscd340_f13_hw3.c linkedList.c alias.c -o hw3
+CFLAGS=-O0 -g
+
+cscd340_f13_hw3:  cscd340_f13_hw3.o linkedList.o alias.o
+
+clean:
+	rm -f *.o hw3

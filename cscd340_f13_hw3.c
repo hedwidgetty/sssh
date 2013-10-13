@@ -1,16 +1,14 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<unistd.h>
-#include<string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 #include "linkedList.h"
 #include "alias.h"
+
 #define MOST 1000
-
-
 
 int parsePipe(char * s, char **leftSide, char ** rightSide)
 {
-
    int i=0, words=0, j=0, hasPipe=0;
    char cur;
    char* sInput;
@@ -482,8 +480,15 @@ int main()
 	
 	FILE * fin=NULL;
 	
+    // LRB: this will only look in current dir.
+    // The "standard" is that rc files are in the user's home dir.
 	fin = fopen(".ssshrc", "r");
+    if (fin == NULL) {
+        // ERROR
+    }
+
 	getFileInput(&input, fin, &head);
+
 	/*if(strcmp(input, "exit"))
 		exit(1);*/
 
@@ -497,9 +502,6 @@ int main()
 	
 	clearList(&head);
 	free(input);
-
-
-
 	return 0;
 }
 
