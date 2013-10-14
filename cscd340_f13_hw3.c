@@ -11,7 +11,6 @@ int parsePipe(char * s, char **leftSide, char ** rightSide)
 {
    int i=0, words=0, j=0, hasPipe=0;
    char cur;
-   char* sInput;
    char first [100], second[100];
    cur=s[i];
    while(i<strlen(s)&&cur!='|')
