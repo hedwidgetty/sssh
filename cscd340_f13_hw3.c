@@ -1,17 +1,25 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
+//Sarah Bass
+
+//My shell...it's not great, but it does execute some basic commands.
+
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<string.h>
 #include "linkedList.h"
 #include "alias.h"
-
 #define MOST 1000
+
+
 
 int parsePipe(char * s, char **leftSide, char ** rightSide)
 {
+
    int i=0, words=0, j=0, hasPipe=0;
    char cur;
-   char first [100], second[100];
+   char* sInput;
+   char first [MOST], second[MOST];
    cur=s[i];
    while(i<strlen(s)&&cur!='|')
    {
@@ -49,8 +57,10 @@ int parsePipe(char * s, char **leftSide, char ** rightSide)
 void strip(char array[])
 {
 	int len = strlen(array);
-	if(array[len-1]=='\n')
-		array[len-1]='\0';
+	if(array[len - 1] =='\n')
+	{
+		array[len - 1] ='\0';
+	}
 }
 
 int goAgain(char * s)
@@ -92,11 +102,12 @@ int makeargs(char *s, char *** argv)
    	return -1;
    int i=0, words=0, j=0;
    char cur;
+	
    
    while(i<strlen(s))
    {
        cur=s[i];	       
-       if(cur==' '||cur == '=')
+       if(cur==' ')
 	   words++;
        i++;
        
@@ -113,7 +124,7 @@ int makeargs(char *s, char *** argv)
 	cur=s[i];
 
 		       
-	if(cur==' '||cur == '='||i==strlen(s))
+	if((cur==' '||i==strlen(s)))
         {
    
 	   char word[wordLen+1];
@@ -154,31 +165,126 @@ int makeargs(char *s, char *** argv)
  
    return words;
 }
-void noPipe(char** argvPre, int argcPre, char** input, Node** head)
+void noPipe(char** prePipe, char*** argvPre, int* argcPre, char** input, Node** head)
 {
 	int error=-99;
-	int i;
-	for(i=0; i<argcPre; i++)
+	int k;
+	FILE* fin;
+	FILE* fout;
+	for(k=0; k<*argcPre; k++)
 	{
-		if(strcmp(argvPre[i], "$PATH")==0)
+		if(strcmp((*argvPre)[k], "$PATH")==0)
 		{
-			free(argvPre[i]);
-			argvPre[i]= (char*)malloc((strlen(getenv("PATH"))+1)*sizeof(char));			
-			strcpy(argvPre[i], getenv("PATH"));
+			free((*argvPre)[k]);
+			(*argvPre)[k]= (char*)malloc((strlen(getenv("PATH"))+1)*sizeof(char));			
+			strcpy((*argvPre)[k], getenv("PATH"));
 		}
 	}
-	error=execvp(argvPre[0], argvPre);
+
+	//hasInRedirect(input, &fin);
+
+	char temp [MOST];
+	char end [MOST];
+	int i, j, m;
+	for(i=0; i!=strlen(*prePipe)&&(*prePipe)[i]!='<'; i++)
+	{
+		end[i]=(*prePipe)[i];
+
+	}
+	if(end[i-1]== ' ')
+		m=i-1;
+	else	
+		m=i;
+	if(i!=strlen(*prePipe))
+	{	
+		i++;
+		if((*prePipe)[i]==' ')
+			i++;	
+		for(j=0; i<(strlen(*prePipe))&&(*prePipe)[i]!='>'; i++)
+		{
+			temp[j]=(*prePipe)[i];
+			j++;
+		}
+		if(temp[j-1]==' ')
+			temp[j-1]='\0';
+		else
+			temp[j]='\0';
+		for(j=m; i<strlen((*prePipe)); i++, j++)
+		{
+			end[j]=(*prePipe)[i];
+		}
+		end[j]='\0';
+		free(*prePipe);
+		*prePipe= (char*)calloc((strlen(end)+1), sizeof(char));
+		strcpy(*prePipe, end);
+		
+		fin=freopen(temp, "r", stdin);
+	}
+	clean(*argcPre, *argvPre);
+	*argcPre =makeargs(*prePipe, argvPre);
+
+
+	char temp2 [MOST];
+	
+	for(i=0; i!=strlen(*prePipe)&&(*prePipe)[i]!='>'; i++)
+	{
+
+	}
+	
+
+	if(i<strlen(*prePipe)-1)
+	{	
+		i++;
+		if((*prePipe)[i]==' ')
+			i++;
+		for(j=0; i<(strlen(*prePipe)+1); i++)
+		{
+			temp2[j]=(*prePipe)[i];
+			j++;
+		}
+
+		for(j=0; (*prePipe)[j]!='>'; j++)
+		{
+			end[j]=(*prePipe)[j];
+			
+		}
+		if(end[j-1]==' ')
+			end[j-1]='\0';
+		else
+			end[j]='\0';
+		free(*prePipe);
+		*prePipe= (char*)calloc((strlen(end)+1), sizeof(char));
+		strcpy(*prePipe, end);
+		
+		fout=freopen(temp2, "w", stdout);
+	}
+	clean(*argcPre, *argvPre);
+	*argcPre =makeargs(*prePipe, argvPre);
+	
+	
+	
+	error=execvp((*argvPre)[0], *argvPre);
+	if(fin!=NULL)
+	{
+		fclose(fin);
+	}
+	if(fout!=NULL)
+		fclose(fout);
 	if(error!=-99)
 	{
-		printf("%s: cmd not found\n", argvPre[0]);
+		printf("%s: cmd not found\n", (*argvPre)[0]);
 		strcpy(*input,"exit");
 	}
+
+	int d;
+	for(d=0; d<*argcPre; d++)
+		printf("%s\n", (*argvPre)[d]);
 
 
 
 }
 
-void withPipe(char** argvPre, char** argvPost, int argcPre, int argcPost, char** input, Node** head)
+void withPipe(char** prePipe, char** postPipe, char*** argvPre, char*** argvPost, int* argcPre, int* argcPost, char** input, Node** head)
 {
 	int fd[2];
 	pipe(fd);
@@ -188,7 +294,7 @@ void withPipe(char** argvPre, char** argvPost, int argcPre, int argcPost, char**
 		close(1);
 		dup(fd[1]);
 		close(fd[1]);
-		noPipe(argvPre, argcPre, input, head);
+		noPipe(prePipe, argvPre, argcPre, input, head);
 		
 
 	}
@@ -199,27 +305,72 @@ void withPipe(char** argvPre, char** argvPost, int argcPre, int argcPost, char**
 		close(0);
 		dup(fd[0]);
 		close(fd[0]);
-		noPipe(argvPost, argcPost, input, head);
+		noPipe(postPipe, argvPost, argcPost, input, head);
 
 	}
 
 
 }
 
-void getInput(char** input)
+int getInput(char** input, FILE* fin)
 {
 	
 	int index =0;
 	char cur;
 	
-	cur = getchar();
+	cur = fgetc(fin);
+	if(fin!=stdin && feof(fin))
+	{
+		return -1;
+	}
+	
+
+	
+	if(cur=='\n')
+	{
+		return 2;
+	}
 	while(cur!='\n')
 	{
-		(*input)[index]=cur;
-		index++;
-		cur = getchar();
+		
+		if(cur!='='&& (cur!=' ' || (index>0 && (*input)[index-1]!=' ')))		
+		{
+			(*input)[index]=cur;
+			index++;
+		}
+		else if(cur == '=')
+		{
+			if((*input)[index-1]!=' ')
+			{
+				(*input)[index]=' ';
+				(*input)[index+1]='=';
+				(*input)[index+2]= ' ';
+				index+=3;
+			}
+			else
+			{
+				(*input)[index]=cur;
+				(*input)[index+1]=' ';
+				
+				index+=2;
+			}
+		}
+		
+		cur = fgetc(fin);
+		
 	}
-	(*input)[index] = '\0';
+	if(index>0 && (*input)[index-1]==' ')
+	{
+		(*input)[index-1] = '\0';
+		
+	}
+	else
+	{
+		(*input)[index] = '\0';
+		
+	}
+	
+	return 0;
 }
 
 
@@ -327,10 +478,10 @@ void removeAlias(char* prePipe, Node** head, char* input)
 }
 
 
-void changePath(char * prePipe)
+void changePath(char * prePipe)//linux/limits.h  PATH_MAX
 {
-	char temp [MOST];
-	char * PATH = (char*)malloc(MOST* sizeof(char));
+	char temp [MOST], temp2[MOST];
+	char PATH [MOST];
 	strcpy(temp, prePipe);
 	strtok(temp, "$PATH:");
 	int j = strlen(temp)+5;
@@ -342,130 +493,267 @@ void changePath(char * prePipe)
 	{
 		temp[i]=prePipe[j];
 		j++;
-		
-	}
-	//printf("%s\n", temp);
 	
-	strcpy(PATH, strcat(getenv("PATH"), temp));
+	}
+	strcpy(temp2, (getenv("PATH")));
+	
+	strcpy(PATH, strcat(temp2, temp));
 	
 	int error;
 	error=setenv("PATH", PATH, 1);
-	//printf("%d\n", error);
-	if(error==-1)
+	if(error!=0)
 		printf("Invalid path\n");
-	free(PATH);
+	
+	
 }
 
-void changeDir(char* prePipe)
+
+void changeDir(char* prePipe, char** argvPre)
 {
-	char CWD [MOST];
-	getcwd(CWD, MOST);
-	printf("%s\n", CWD);
+	//char CWD [MOST];
+	//getcwd(CWD, MOST);
+	int error;
 	if(strcmp(prePipe, "cd")==0)
 	{
-		chdir("/home");
+		error=chdir("/home");
 	}
-	getcwd(CWD, MOST);
-	printf("%s\n", CWD);
 
+	else
+	{
+				
+		error=chdir(argvPre[1]);
+		
+	}
+	if(error!=0)
+	{
+		perror("invalid path");
+	}
+	
+	
+	
 
 }
 
-void executeInput(Node** head, char** input)
+void executeInput(Node** head, char** input, Node* history_head, int* HISTORYCOUNT, int* usedHist, int* histSize)
 {
 
-	int status;
 	
 	char * prePipe = NULL, * postPipe = NULL;
 	char **argvPre = NULL, **argvPost=NULL;
-	int res, argcPre, argcPost;
-			
+	int res, argcPre, argcPost, status;
+	
 		
-		if(strcmp(*input, "alias")==0)
+	if(strcmp(*input, "history")==0)
+	{
+		if(history_head==NULL)
+			printf("no history\n");		
+
+		Node* cur=history_head;
+		int i;
+		for(i=0; i<(*histSize-*HISTORYCOUNT); i++)
+			cur=cur->next;
+		while(cur!=NULL)
 		{
-						
-			printList(*head);
+			printf("%d %s\n", i, cur->data->cmd);
+			cur=cur->next;
+			i++;
 		}
 		
+	}
+	
 		
-			
-		
+	else if(strcmp(*input, "alias")==0)
+	{
+					
+		printList(*head);
+	}
+	
+	else
+	{
+		res = parsePipe(*input, &prePipe, &postPipe);
+		isAlias(&prePipe, *head);
+		if(strcmp(prePipe, "!!")==0||prePipe[0]=='!')
+		{
+			if(histSize==0)
+			{
+				printf("invalid cmd: no history\n");
+				return;
+			}
+			else
+			{
+				int error=historyCmds(&prePipe, history_head, HISTORYCOUNT);
+				if(error==1)
+				{
+					printf("invalid cmd: not that much history\n");
+					return;
+				}
+			}
+			*usedHist=1;
+		}	
+	
 		else if(strcmp(*input, "exit")!=0)
 		{
-			res = parsePipe(*input, &prePipe, &postPipe);
-			isAlias(&prePipe, *head);
-			
+		
+		
 			argcPre =makeargs(prePipe, &argvPre);
+		
 			if(strcmp(argvPre[0], "alias")==0)
 			{
 				defineAlias(prePipe, head, *input);
-				
+			
+			}
+			else if(strcmp(argvPre[0], "HISTORYCOUNT")==0)
+			{			
+				(*HISTORYCOUNT)=atoi(argvPre[2]);
+			
 			}
 			else if(strcmp(argvPre[0], "PATH")==0)
 			{
 				changePath(prePipe);
-					
-			
+				
+		
 			}
-
+			
+		
 			else if(strcmp(argvPre[0], "cd")==0)
 			{
-				changeDir(prePipe);
+				changeDir(prePipe, argvPre);
 
 			}
-			
+		
+		
 			else if(strcmp(argvPre[0], "unalias")==0)
 			{
 				removeAlias(prePipe, head, *input);
 			}
 			else 
 			{
-								
+							
 				if(res==1)
 				{
 					isAlias(&postPipe, *head);
+					if(strcmp(postPipe, "!!")==0||postPipe[0]=='!')
+					{
+						historyCmds(&postPipe, history_head, HISTORYCOUNT);
+					}
 					argcPost =makeargs(postPipe, &argvPost);
 				}
 				if(fork()==0)
 				{								
+				
+									
+				
 					if(res == 1)
 					{
-						withPipe(argvPre, argvPost, argcPre, argcPost, input, head);	
+						withPipe(&prePipe, &postPipe, &argvPre, &argvPost, &argcPre, &argcPost, input, head);	
 					}
 					else
 					{
-						noPipe(argvPre, argcPre, input, head);				
+						noPipe(&prePipe, &argvPre, &argcPre, input, head);				
 					}				
 				}
 				waitpid(-1, &status, 0);
 				
-				
+			
 			}
-			free(prePipe);
 			clean(argcPre, argvPre);
 			if(res==1)
 			{
 				free(postPipe);
 				clean(argcPost, argvPost);
 			}
-			
-									
+		
+								
 		}
+		free(prePipe);
+	}
+	
 }
 
-void getFileInput(char** input, FILE* fin, Node** head)
+
+
+
+void getFileInput(char** input, FILE* fin, Node** head, Node* history_head, int* HISTORYCOUNT, int* usedHist, int* histSize)
 {
+	int end;
+	end=getInput(input, fin);
 	
-	fgets(*input, MOST, fin);
-	
-	while(!feof(fin)&&strcmp(*input, "exit")!=0)
+	while(end!=-1 && strcmp(*input, "exit")!=0)
 	{
-		strip(*input);
-		executeInput(head, input);
-		fgets(*input, MOST, fin);
+		if(end==0)		
+			executeInput(head, input, history_head, HISTORYCOUNT, usedHist, histSize);
+		end=getInput(input, fin);
+		
 
 	}
 	fclose(fin);
+}
+
+void getHistInput(char** input, FILE* finHist, Node** history_head, int* histSize)
+{
+	
+	int end;
+	end =getInput(input, finHist);
+	
+	while(end!=-1)
+	{
+		if(end!=2)		
+		{
+			Alias* a=createAlias(*input, " ");
+			Node* n = createNode(a);
+			addLast(n, history_head);
+			(*histSize)++;
+			
+		}
+		end=getInput(input, finHist);
+
+	}
+	
+
+
+}
+
+
+void keepHistory(FILE* fin, char* input, int* histSize, Node** history_head)
+{
+		
+	Alias* a=createAlias(input, " ");
+	Node* n=createNode(a);
+	addLast(n, history_head);
+	fprintf(fin,"%s\n", input);
+	(*histSize)=(*histSize)+1;
+	
+	
+}
+
+int historyCmds(char** prePipe, Node* historyhead, int HISTORYCOUNT, int histSize)
+{
+		
+	if(strcmp(*prePipe, "!!")==0)
+	{
+		strcpy(*prePipe, (historyhead->data->cmd));
+	}
+	else
+	{
+		char number [MOST];
+		int i=1;
+		int num;
+		while(i<(strlen(*prePipe)+1))
+		{
+			number[i-1]=(*prePipe)[i];
+			i++;
+		}
+		num=atoi(number);
+		if(num>histSize)
+			return 1;
+		Node* cur = historyhead;
+		for(i=histSize; i>num; i--)
+			cur=cur->next;
+		strcpy(*prePipe, (cur->data->cmd));
+		
+	}
+	return 0;
+			
 }
 
 
@@ -473,34 +761,50 @@ int main()
 {
 	
 	char * input = NULL;
-	Node * head=NULL;
+	Node * head = NULL;
+	Node * history_head = NULL;
+	int HISTORYCOUNT=0;
+	int histSize=0;
+	int usedHist=1;
 	
 	input = (char*)malloc(MOST* sizeof(char));
+	input[0]='-';
 	
 	FILE * fin=NULL;
-	
-    // LRB: this will only look in current dir.
-    // The "standard" is that rc files are in the user's home dir.
+	FILE * finHist=NULL;
+	finHist=fopen(".sssh_history", "rw");
 	fin = fopen(".ssshrc", "r");
-    if (fin == NULL) {
-        // ERROR
-    }
+	getFileInput(&input, fin, &head, history_head, &HISTORYCOUNT, &usedHist, &histSize);
+	getHistInput(&input, finHist, &history_head, &HISTORYCOUNT);
+	input[0]='-';
+	
+	
+	
 
-	getFileInput(&input, fin, &head);
 
-	/*if(strcmp(input, "exit"))
-		exit(1);*/
-
-	while(input==NULL||goAgain(input))
-	{		
+	usedHist=0;
+	while(input[0]=='-'||goAgain(input))
+	{	
+			
 		printf("?:  ");
-		getInput(&input);
-		executeInput(&head, &input);	
-		
+
+		getInput(&input, stdin);
+		executeInput(&head, &input, history_head, &HISTORYCOUNT, &usedHist, &histSize);
+		if(usedHist==0 && (strcmp(input, "exit")!=0))
+		{
+			keepHistory(finHist, input, &histSize, &history_head);	
+		}	
+		usedHist=0;
 	}
 	
+	
 	clearList(&head);
+	clearList(&history_head);
 	free(input);
+	fclose(finHist);
+
+
+
 	return 0;
 }
 

@@ -18,9 +18,22 @@ void addFirst(Node* t, Node** head)
 	*head=t;
 }
 
+void addLast(Node* t, Node** head)
+{
+	Node* cur=*head;
+	if(cur==NULL)
+		addFirst(t, head);
+	else
+	{
+		while(cur->next!=NULL)
+			cur=cur->next;
+		cur->next=t;
+		t->next=NULL;
+	}
+}
+
 void printList(Node* head)
 {
-	printf("\n\n");
 	Node* cur=head;
 	for(cur=head; cur!=NULL; cur=cur->next)
 	{
