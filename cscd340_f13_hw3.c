@@ -3,22 +3,22 @@
 //My shell...it's not great, but it does execute some basic commands.
 
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<unistd.h>
-#include<string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <ctype.h>
 #include "linkedList.h"
 #include "alias.h"
 #define MOST 1000
 
-
+int historyCmds(char** prePipe, Node* historyhead, int HISTORYCOUNT, int histSize);
 
 int parsePipe(char * s, char **leftSide, char ** rightSide)
 {
 
-   int i=0, words=0, j=0, hasPipe=0;
+   int i=0, j=0, hasPipe=0;
    char cur;
-   char* sInput;
    char first [MOST], second[MOST];
    cur=s[i];
    while(i<strlen(s)&&cur!='|')
@@ -74,7 +74,7 @@ int goAgain(char * s)
 	{
 		int i;
 		for(i=0; i<4; i++)
-			temp[i]=tolower(temp[i]);
+			temp[i] = tolower(temp[i]);
 	}
 	if(strcmp("exit", temp)==0)
 		return 0;	
@@ -169,8 +169,8 @@ void noPipe(char** prePipe, char*** argvPre, int* argcPre, char** input, Node** 
 {
 	int error=-99;
 	int k;
-	FILE* fin;
-	FILE* fout;
+	FILE* fin = NULL;
+	FILE* fout = NULL;
 	for(k=0; k<*argcPre; k++)
 	{
 		if(strcmp((*argvPre)[k], "$PATH")==0)
@@ -378,7 +378,6 @@ int getInput(char** input, FILE* fin)
 void defineAlias(char* argv, Node** head, char* input)
 {
 	int i=6, j=0;
-	char cur;
 	char temp1 [MOST], temp2[MOST];
 	while(i<strlen(argv)&&(argv[i]!='='))
 	{
@@ -564,7 +563,6 @@ void executeInput(Node** head, char** input, Node* history_head, int* HISTORYCOU
 		
 	else if(strcmp(*input, "alias")==0)
 	{
-					
 		printList(*head);
 	}
 	
@@ -581,7 +579,7 @@ void executeInput(Node** head, char** input, Node* history_head, int* HISTORYCOU
 			}
 			else
 			{
-				int error=historyCmds(&prePipe, history_head, HISTORYCOUNT);
+				int error = historyCmds(&prePipe, history_head, *HISTORYCOUNT, *histSize);
 				if(error==1)
 				{
 					printf("invalid cmd: not that much history\n");
@@ -611,7 +609,6 @@ void executeInput(Node** head, char** input, Node* history_head, int* HISTORYCOU
 			{
 				changePath(prePipe);
 				
-		
 			}
 			
 		
@@ -634,7 +631,7 @@ void executeInput(Node** head, char** input, Node* history_head, int* HISTORYCOU
 					isAlias(&postPipe, *head);
 					if(strcmp(postPipe, "!!")==0||postPipe[0]=='!')
 					{
-						historyCmds(&postPipe, history_head, HISTORYCOUNT);
+						historyCmds(&postPipe, history_head, *HISTORYCOUNT, *histSize);
 					}
 					argcPost =makeargs(postPipe, &argvPost);
 				}
@@ -802,8 +799,6 @@ int main()
 	clearList(&history_head);
 	free(input);
 	fclose(finHist);
-
-
 
 	return 0;
 }
